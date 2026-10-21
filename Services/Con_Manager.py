@@ -67,17 +67,14 @@ class BindableEvent:
     # Inner Methods
 
     def _filter(data: any, filterFunc: FunctionType) -> bool:
-        try:
-            return filterFunc(data)
-        except Exception as e:
-            print(e)
-            return False
+        return filterFunc(data)
 
     def _callBack(data: any, callbackFunc: FunctionType) -> None:
         try:
             callbackFunc(data)
         except Exception as e:
             print(e)
+            print("callBack has been broken")
 
     # Member Methods
 
@@ -114,6 +111,8 @@ class BindableEvent:
             except Exception as e:
                 print(e)
                 print("Event Fire has been Failed for Unknown Error")
+        else:
+            print("Event is not linked")
 
 
 class Connection_Manager:

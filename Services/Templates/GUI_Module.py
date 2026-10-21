@@ -1,5 +1,7 @@
 from __future__ import annotations
+from types import FunctionType
 
+# Tkinter
 import tkinter as tk
 
 
@@ -310,7 +312,7 @@ class Window:
 
     def __init__(
         self,
-        name: str = "",
+        name: str = "Window",
         size: str = "100x100",
         icon: any = None,
         resizable: list[bool] = [False, False],
@@ -382,17 +384,24 @@ class Window:
 
     # Member Methods
 
-    def addPage(self, name: str):
+    def addPage(self, name: str) -> Page:
         if name not in self.pages:
             self.pages[name] = Page(self, name)
+            return self.pages[name]
+        else:
+            print("addPage : The Page is already added")
+            return None
 
     def removePage(self, name: str):
         if name in self.pages:
             page = self.pages.pop(name)
             page.destroy()
+        else:
+            print("removePage : Can't Find Page")
 
     def changePage(self, name: str):
         if name not in self.pages:
+            print("changePage : Can't Find Page")
             return
         if self.currentPage is not self.pages[name]:
             old_page = self.currentPage
@@ -401,6 +410,8 @@ class Window:
             if old_page is not None:
                 old_page.hidePage()
             self.currentPage.placePage()
+        else:
+            print("changePage : new page is already current page")
 
     def destroy(self):
         for page in list(self.pages.values()):

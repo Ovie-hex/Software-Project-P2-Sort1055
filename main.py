@@ -1,3 +1,3 @@
-from Services import GUI, OP_Manager
+from Services import GUI, OP
 
 GUI()
