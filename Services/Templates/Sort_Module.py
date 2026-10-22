@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 
+from types import FunctionType
+from typing import Any
+
 """
 GUI_Manager에 전달할 데이터 딕셔너리 양식
 {
@@ -55,6 +58,8 @@ class QuickSort(Sort):
 class BubbleSort(Sort):
     def __init__(self, data):
         super().__init__(data)
+
+        self._pos = 0
 
     # Read Only
     @property

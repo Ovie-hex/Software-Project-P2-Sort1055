@@ -1,143 +1,151 @@
-import inspect
-from types import ModuleType, FunctionType
+from __future__ import annotations
+from types import FunctionType
+from typing import Any
+import secrets
+
+# eventFilter 및 eventCallback 함수 작성시 매게변수로 requestor의 이름과 data를 지정해야합니다.
 
 
-class BindableEvent:
+class Connection:
+    _connections: list[Connection] = []
+
     # Information
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, firstevent: BindableEvent):
         self._name: str = name
 
-        self._link: list[ModuleType] = []
-        self._eventFilter: list[FunctionType] = []
-        self._eventCallback: list[FunctionType] = []
+        self._events: dict[BindableEvent, dict[str, FunctionType]] = {}
+        self._count = 0
         self._onlinked: bool = False
 
+        # Initalize
+        Connection._connections.append(self)
+
+        self._events[firstevent] = {"eventFilter": None, "eventCallback": None}
+        firstevent._connection = self
+        self._count += 1
+
     def __str__(self):
-        return f"BindableEvent : {self._name}"
-
-    # Read Only
-
-    @property
-    def name(self):
         return self._name
 
+    # Read Only
     @property
-    def onlinked(self):
-        return self._onlinked
-
-    # Can Adjust
-
-    @property
-    def eventFilter(self) -> FunctionType:
-        try:
-            return self._eventFilter[
-                self._link.index(inspect.getmodule(inspect.stack()[1].frame))
-            ]
-        except Exception as e:
-            print(e)
-
-    @eventFilter.setter
-    def eventFilter(self, func):
-        try:
-            self._eventFilter[
-                self._link.index(inspect.getmodule(inspect.stack()[1].frame))
-            ] = func
-        except Exception as e:
-            print(e)
-
-    @property
-    def eventCallback(self) -> FunctionType:
-        try:
-            return self._eventCallback[
-                self._link.index(inspect.getmodule(inspect.stack()[1].frame))
-            ]
-        except Exception as e:
-            print(e)
-
-    @eventCallback.setter
-    def eventCallback(self, func):
-        try:
-            self._eventCallback[
-                self._link.index(inspect.getmodule(inspect.stack()[1].frame))
-            ] = func
-        except Exception as e:
-            print(e)
-
-    # Inner Methods
-
-    def _filter(data: any, filterFunc: FunctionType) -> bool:
-        return filterFunc(data)
-
-    def _callBack(data: any, callbackFunc: FunctionType) -> None:
-        try:
-            callbackFunc(data)
-        except Exception as e:
-            print(e)
-            print("callBack has been broken")
+    def name(self) -> str:
+        return self._name
 
     # Member Methods
 
-    def _setLink(self, module: ModuleType) -> None:
-        if len(self._link) < 2:
-            self._link.append(module)
-            self._eventFilter.append(None)
-            self._eventCallback.append(None)
+    def addLink(self, event: BindableEvent) -> None:
+        if event in self._events:
+            return
 
-            if len(self._link) == 2:
-                self._onlinked = True
+        self._events[event] = {"eventFilter": None, "eventCallback": None}
+        event._connection = self
+        self._count += 1
 
-    def fire(self, data: any) -> None:
-        if self.onlinked:
-            try:
-                calledModule: ModuleType = inspect.getmodule(inspect.stack()[1].frame)
-                funcPos = self._link.index(calledModule)
+        if self._count >= 2:
+            self._onlinked = True
 
-                filterFunc = None
-                callbackFunc = None
+    def removeLink(self, event: BindableEvent) -> None:
+        if event not in self._events or event._connection != self:
+            return
 
-                if funcPos == 0:
-                    filterFunc = self._eventFilter[1]
-                    callbackFunc = self._eventCallback[1]
-                elif funcPos == 1:
-                    filterFunc = self._eventFilter[0]
-                    callbackFunc = self._eventCallback[0]
+        self._events.pop(event)
+        self._count -= 1
+        if self._count < 2:
+            self._onlinked = False
+        if self._count < 0:
+            Connection._connections.remove(self)
 
-                if BindableEvent._filter(data, filterFunc):
-                    BindableEvent._callBack(data, callbackFunc)
-                else:
-                    print("Event Fire has been Failed for Filtering")
+    def adjustFilter(self, event: BindableEvent, func: FunctionType):
+        if event not in self._events or event._connection != self:
+            return
 
-            except Exception as e:
-                print(e)
-                print("Event Fire has been Failed for Unknown Error")
-        else:
-            print("Event is not linked")
+        event._connection._events[event]["eventFilter"] = func
+
+    def adjustCallback(self, event: BindableEvent, func: FunctionType):
+        if event not in self._events or event._connection != self:
+            return
+
+        event._connection._events[event]["eventCallback"] = func
+
+    def send(self, requestor: BindableEvent, data: Any) -> None:
+        if self._onlinked:
+            for event in self._events:
+                if event.name != requestor.name:
+                    if event.eventFilter == None and event.eventCallback != None:
+                        event.eventCallback(requestor.name, data)
+                        continue
+                    if not event.eventFilter(requestor.name, data):
+                        continue
+                    if event.eventCallback != None:
+                        event.eventCallback(requestor.name, data)
+
+
+class BindableEvent:
+    _bindableEvents: list[BindableEvent] = []
+
+    # Information
+
+    def __init__(self, name):
+        self._name: str = str(hash(name + secrets.token_hex(67)))
+        self._connection: Connection = None
+
+    def __str__(self):
+        return f"BindableEvent : {self._name}, Connection : {self._connection.name}"
+
+    # Can Adjust
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, name) -> None:
+        if name not in (b.name for b in BindableEvent._bindableEvents):
+            self._name = name
+
+    @property
+    def eventFilter(self) -> FunctionType:
+        return self._connection._events[self]["eventFilter"]
+
+    @eventFilter.setter
+    def eventFilter(self, func) -> None:
+        self._connection.adjustFilter(self, func)
+
+    @property
+    def eventCallback(self) -> FunctionType:
+        return self._connection._events[self]["eventCallback"]
+
+    @eventCallback.setter
+    def eventCallback(self, func) -> None:
+        self._connection.adjustCallback(self, func)
+
+    # Member Methods
+
+    def fire(self, data: Any) -> None:
+        self._connection.send(self, data)
+
+    def destroy(self) -> None:
+        if self not in BindableEvent._bindableEvents:
+            return
+
+        self._connection.removeLink(self)
+        BindableEvent._bindableEvents.remove(self)
 
 
 class Connection_Manager:
-    _bindableEvents: dict[str, BindableEvent] = {}
-
     @staticmethod
-    def getBindableEvent(name: str) -> BindableEvent:
-        calledModule: ModuleType = inspect.getmodule(inspect.stack()[1].frame)
+    def getBindableEvent(name: str) -> BindableEvent | None:
 
         name = name.strip()
 
-        if name not in Connection_Manager._bindableEvents:
-            Connection_Manager._bindableEvents[name] = BindableEvent(name)
-            event = Connection_Manager._bindableEvents[name]
+        con = next((c for c in Connection._connections if c.name == name), None)
 
-            event._setLink(calledModule)
-
-            return Connection_Manager._bindableEvents[name]
+        if con == None:
+            event = BindableEvent(name)
+            Connection(name, event)
+            return event
         else:
-            event: BindableEvent = Connection_Manager._bindableEvents[name]
-
-            if event._onlinked == False:
-                event._setLink(calledModule)
-
-                return event
-            else:
-                print(f"{event} is already linked")
-                return None
+            event = BindableEvent(name)
+            con.addLink(event)
+            return event

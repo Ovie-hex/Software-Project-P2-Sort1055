@@ -1,5 +1,6 @@
 from __future__ import annotations
 from types import FunctionType
+from typing import Any
 
 # Tkinter
 import tkinter as tk
@@ -294,6 +295,8 @@ class Page:
             self.widgets[name] = Widget(
                 self, name, widgetType, style, placeType, placeAttribute, sync, event
             )
+
+            return self.widgets[name]
 
     def removeWidget(self, name: str):
         if name in self.widgets:
