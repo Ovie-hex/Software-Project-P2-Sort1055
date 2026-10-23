@@ -1,9 +1,9 @@
 from __future__ import annotations
-from types import FunctionType
-from typing import Any
+from typing import *
 
 # Tkinter
 import tkinter as tk
+from tkinter import messagebox
 
 
 class Widget:
@@ -66,10 +66,22 @@ class Widget:
         self._placeAttribute: dict[str, any] = placeAttribute or {}
         self._sync = sync
         self._event = event
+        self._interactable = True
 
         self.__activated = False
 
         self.childWidgets: dict[str, Widget] = {}
+
+        if self._widgetType == "Entry":
+
+            def getText(entry: tk.Entry):
+                return entry.get()
+
+            def removeText(entry: tk.Entry):
+                entry.delete(0, tk.END)
+
+            self.getText = getText
+            self.removeText = removeText
 
         # Initalize
 
@@ -130,6 +142,14 @@ class Widget:
         self._obj.config(**self._style)
 
     @property
+    def interactable(self):
+        return self._interactable
+
+    @interactable.setter
+    def interactable(self, status: bool):
+        self._interactable = status
+
+    @property
     def sync(self):
         return self._sync.__name__
 
@@ -153,7 +173,7 @@ class Widget:
 
     def __command(self, event):
         def command():
-            if self.__activated:
+            if self.__activated or not self._interactable:
                 return
 
             self.__activated = True
@@ -422,3 +442,17 @@ class Window:
 
         self.pages.clear()
         self._obj.destroy()
+
+
+class Message:
+    @staticmethod
+    def error(text: str) -> None:
+        messagebox.showerror("에러 발생", text)
+
+    @staticmethod
+    def warn(text: str) -> None:
+        messagebox.showwarning("경고", text)
+
+    @staticmethod
+    def info(text: str) -> None:
+        messagebox.showinfo("정보", text)

@@ -1,9 +1,8 @@
 from __future__ import annotations
-from types import FunctionType
-from typing import Any
+from typing import *
 import secrets
 
-# eventFilter 및 eventCallback 함수 작성시 매게변수로 requestor의 이름과 data를 지정해야합니다.
+# eventFilter 및 eventCallback 함수 작성시 매게변수로 requestor의 이름과 data를 받아야합니다.
 
 
 class Connection:
@@ -14,7 +13,10 @@ class Connection:
     def __init__(self, name: str, firstevent: BindableEvent):
         self._name: str = name
 
-        self._events: dict[BindableEvent, dict[str, FunctionType]] = {}
+        self._events: dict[
+            BindableEvent,
+            dict[str, Callable[[str, Any], None] | Callable[[str, Any], bool]],
+        ] = {}
         self._count = 0
         self._onlinked: bool = False
 
@@ -57,13 +59,17 @@ class Connection:
         if self._count < 0:
             Connection._connections.remove(self)
 
-    def adjustFilter(self, event: BindableEvent, func: FunctionType):
+    def adjustFilter(
+        self, event: BindableEvent, func: Callable[[str, Any], bool]
+    ) -> None:
         if event not in self._events or event._connection != self:
             return
 
         event._connection._events[event]["eventFilter"] = func
 
-    def adjustCallback(self, event: BindableEvent, func: FunctionType):
+    def adjustCallback(
+        self, event: BindableEvent, func: Callable[[str, Any], None]
+    ) -> None:
         if event not in self._events or event._connection != self:
             return
 
@@ -105,7 +111,7 @@ class BindableEvent:
             self._name = name
 
     @property
-    def eventFilter(self) -> FunctionType:
+    def eventFilter(self) -> Callable[[str, Any], bool]:
         return self._connection._events[self]["eventFilter"]
 
     @eventFilter.setter
@@ -113,7 +119,7 @@ class BindableEvent:
         self._connection.adjustFilter(self, func)
 
     @property
-    def eventCallback(self) -> FunctionType:
+    def eventCallback(self) -> Callable[[str, Any], None]:
         return self._connection._events[self]["eventCallback"]
 
     @eventCallback.setter
