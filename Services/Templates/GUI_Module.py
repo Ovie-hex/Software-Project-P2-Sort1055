@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import *
+import copy
 
 # Tkinter
 import tkinter as tk
@@ -40,6 +41,9 @@ class Widget:
         "Scrollbar": False,
     }
 
+    def nothing(widget: Widget):
+        pass
+
     # Info
 
     def __init__(
@@ -47,9 +51,9 @@ class Widget:
         parent: (Page | Widget),
         name: str = "",
         widgetType: str = None,
-        style: dict[str, any] = None,
+        style: dict[str, Any] = None,
         placeType: str = None,
-        placeAttribute: dict[str, any] = None,
+        placeAttribute: dict[str, Any] = None,
         sync=None,
         event=None,
     ):
@@ -61,9 +65,9 @@ class Widget:
         self._parent: Page | Widget = parent
         self._name: str = name
         self._widgetType: str = widgetType
-        self._style: dict[str, any] = style or {}
+        self._style: dict[str, Any] = style or {}
         self._placeType: str = placeType
-        self._placeAttribute: dict[str, any] = placeAttribute or {}
+        self._placeAttribute: dict[str, Any] = placeAttribute or {}
         self._sync = sync
         self._event = event
         self._interactable = True
@@ -92,6 +96,8 @@ class Widget:
                 widget.config(command=self.__command(self._event))
         if self._style:
             widget.config(self._style)
+        if self._sync == None:
+            self._sync = Widget.nothing
         self.placeWidget()
 
     # Attribute Changes
@@ -114,7 +120,7 @@ class Widget:
 
     @property
     def placeAttribute(self):  # Read Only
-        return self._placeAttribute
+        return copy.deepcopy(self._placeAttribute)
 
     @property
     def name(self):
@@ -134,12 +140,27 @@ class Widget:
 
     @property
     def style(self):
-        return self._style
+        return copy.deepcopy(self._style)
 
     @style.setter
-    def style(self, new_style):
-        self._style = new_style
-        self._obj.config(**self._style)
+    def style(self, new_style: dict[str, Any]):
+        old_style: dict[str, Any] = {}
+        for k in new_style:
+            oldvalue = self._style.get(k)
+            old_style[k] = oldvalue
+        try:
+            for k, v in new_style.items():
+                self._style[k] = v
+            self._obj.config(new_style)
+        except Exception as e:
+            print(e)
+            self._obj.config(old_style)
+            for k, v in old_style.items():
+                if v == None:
+                    self._style.pop(k)
+                else:
+                    self._style[k] = old_style.get(k)
+                    self._obj.config(self._style)
 
     @property
     def interactable(self):
@@ -155,7 +176,7 @@ class Widget:
 
     @sync.setter
     def sync(self, new_sync):
-        if self._sync__name__ != new_sync.__name__:
+        if self._sync.__name__ != new_sync.__name__:
             self._sync = new_sync
 
     @property
@@ -196,35 +217,53 @@ class Widget:
     def placeWidget(self):
         match self.placeType:
             case "pack":
-                self.obj.pack(**self.placeAttribute)
+                self.obj.pack(self.placeAttribute)
             case "grid":
-                self.obj.grid(**self.placeAttribute)
+                self.obj.grid(self.placeAttribute)
             case "place":
-                self.obj.place(**self.placeAttribute)
+                self.obj.place(self.placeAttribute)
 
     def addChildWidget(
         self,
         name: str,
         widgetType: str = None,
-        style: dict[str, any] = None,
+        style: dict[str, Any] = None,
         placeType: str = None,
-        placeAttribute: dict[str, any] = None,
-        sync=lambda: None,
-        event=lambda: None,
+        placeAttribute: dict[str, Any] = None,
+        sync=None,
+        event=None,
     ):
         if name not in self.childWidgets:
             self.childWidgets[name] = Widget(
                 self, name, widgetType, style, placeType, placeAttribute, sync, event
             )
+            return self.childWidgets[name]
 
     def removeChildWidget(self, name: str):
         if name in self.childWidgets:
             del self.childWidgets[name]
 
-    def changePlaceAttribute(self, new_placeType, new_placeAttribute):
-        self._placeType = new_placeType
-        self._placeAttribute = new_placeAttribute
-        self.placeWidget()
+    def changePlaceAttribute(
+        self, new_placeType: str, new_placeAttribute: dict[str, Any]
+    ):
+        old_placeType = self.placeType
+        old_placeAttribute: dict[str, Any] = {}
+        for k in new_placeAttribute:
+            old_placeAttribute[k] = self._placeAttribute.get(k)
+        try:
+            self._placeType = new_placeType
+            for k, v in new_placeAttribute.items():
+                self._placeAttribute[k] = v
+            self.placeWidget()
+        except Exception as e:
+            print(e)
+            self.placeType = old_placeType
+            for k, v in old_placeAttribute.items():
+                if v == None:
+                    self._placeAttribute.pop(k)
+                else:
+                    self._placeAttribute[k] = old_placeAttribute.get(k)
+            self.placeWidget()
 
     def syncWidget(self):
         for child in self.childWidgets.values():
@@ -243,7 +282,7 @@ class Widget:
 class Page:
     # Info
 
-    def __init__(self, parent: Window, name: str = "", style: dict[str, any] = None):
+    def __init__(self, parent: Window, name: str = "", style: dict[str, Any] = None):
         # Set Attributes
 
         self._obj: tk.Frame = tk.Frame(parent.obj)
@@ -282,12 +321,24 @@ class Page:
 
     @property
     def style(self):
-        return self._style
+        return copy.deepcopy(self._style)
 
     @style.setter
-    def style(self, new_Style: dict[str, any]):
-        self._style = new_Style
-        self._obj.config(**self._style)
+    def style(self, new_style: dict[str, Any]):
+        old_style: dict[str, Any] = {}
+        for k in new_style:
+            oldvalue = self._style.get(k)
+            if oldvalue != None:
+                old_style[k] = oldvalue
+        try:
+            self._obj.config(new_style)
+            for k, v in new_style.items():
+                self._style[k] = v
+        except Exception as e:
+            print(e)
+            self._obj.config(old_style)
+            for k, v in old_style.items():
+                self._style[k] = v
         if self.parent.currentPage is self:
             self.placePage()
 
@@ -305,9 +356,9 @@ class Page:
         self,
         name: str,
         widgetType: str = None,
-        style: dict[str, any] = None,
+        style: dict[str, Any] = None,
         placeType: str = None,
-        placeAttribute: dict[str, any] = None,
+        placeAttribute: dict[str, Any] = None,
         sync=None,
         event=None,
     ):
@@ -337,7 +388,7 @@ class Window:
         self,
         name: str = "Window",
         size: str = "100x100",
-        icon: any = None,
+        icon: Any = None,
         resizable: list[bool] = [False, False],
     ):
         # Set Attributes
@@ -345,7 +396,7 @@ class Window:
         self._obj: tk.Tk = tk.Tk()
         self._name: str = name
         self._size: str = size
-        self._icon: any = icon
+        self._icon: Any = icon
         self._resizable: list[bool] = resizable
 
         self.pages: dict[str, Page] = {}
@@ -392,7 +443,7 @@ class Window:
         return self._icon
 
     @icon.setter
-    def icon(self, new_icon: any):
+    def icon(self, new_icon: Any):
         self._icon = new_icon
         self._obj.iconbitmap(self._icon)
 

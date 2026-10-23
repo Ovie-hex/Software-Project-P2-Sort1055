@@ -5,6 +5,12 @@ from .Con_Manager import Connection_Manager as connect
 
 
 class GUI:
+    """
+    ------------------------------
+                Values
+    ------------------------------
+    """
+
     # SettingPage Status
     startEnabled = True
 
@@ -15,32 +21,23 @@ class GUI:
     returnEnabled = True
 
     # 전달할거
-    dataRange = 1
+    dataRange = 2
     dataAmount = 2
     sortType = "Random"
 
     def __init__(self):
         """
         ------------------------------
-                    Values
-        ------------------------------
-        """
-
-        """
-        ------------------------------
                 BindableEvent
         ------------------------------
         """
-        # 데이터 설정 후 그 설정 값을 op에 보내고 초기화를 통해 비주얼 라이저 화면으로 넘어감
         sortInitEv = connect.getBindableEvent("sortInitEv")
 
-        # Act할 때 마다 callback 호출하여 gui 동기화
+        sortStatusEv = connect.getBindableEvent("sortStatusEv")
+
         sort1Ev = connect.getBindableEvent("sort1Ev")
         sort2Ev = connect.getBindableEvent("sort2Ev")
         sort3Ev = connect.getBindableEvent("sort3Ev")
-
-        # 비주얼라이저 화면에서 스탭, 재생, 정지 버튼 전달
-        sortStatusEv = connect.getBindableEvent("sortStatusEv")
 
         """
         ------------------------------
@@ -60,7 +57,7 @@ class GUI:
             widgetType="Label",
             placeType="place",
             style={
-                "text": "랜덤 값 범위 [1 ~ 500]",
+                "text": "랜덤 값 범위 [2 ~ 500]",
                 "anchor": "w",
                 "bg": "#CCCCCC",
                 "font": ("맑은 고딕", 8, "bold"),
@@ -205,19 +202,75 @@ class GUI:
         visualPage = window.addPage("visualPage")
         visualPage.style = {"bg": "#CCCCCC"}
 
+        interactFrame = visualPage.addWidget(
+            name="interactFrame",
+            widgetType="Frame",
+            style={},
+            placeType="place",
+            placeAttribute={"y": 740, "relwidth": 1, "height": 60},
+        )
+
+        backBtn = interactFrame.addChildWidget(
+            name="backBtn",
+            widgetType="Button",
+            style={
+                "text": "◀ 돌아가기",
+                "font": ("맑은 고딕", 14, "bold"),
+                "bg": "#8FFF72",
+                "fg": "#ffffff",
+            },
+            placeType="place",
+            placeAttribute={
+                "x": 10,
+                "y": 10,
+                "width": 120,
+                "height": 40,
+            },
+        )
+
+        def backBtnSync(widget: Widget):
+            if GUI.returnEnabled:
+                widget.interactable = True
+                widget.style = {
+                    "text": "◀ 돌아가기",
+                    "font": ("맑은 고딕", 14, "bold"),
+                    "bg": "#8FFF72",
+                    "fg": "#ffffff",
+                }
+            else:
+                widget.interactable = False
+                widget.style = {
+                    "text": "◀ 돌아가기",
+                    "font": ("맑은 고딕", 14, "bold"),
+                    "bg": "#FC3A3A",
+                    "fg": "#ffffff",
+                }
+
+        backBtn.sync = backBtnSync
+
+        # playBtn = interactFrame.addChildWidget()
+        # stopBtn = interactFrame.addChildWidget()
+        # stepBtn = interactFrame.addChildWidget()
+        # speedBtn = interactFrame.addChildWidget()
+        # speedEntry = interactFrame.addChildWidget()
+        # speedAdjBtn = interactFrame.addChildWidget()
+
         """
         ------------------------------
              GUI Func, Event Func
         ------------------------------
         """
+        # Setting
 
-        def EnableStart():
+        def enableStart():
             startBtn.interactable = True
             startBtn.style = {"bg": "#8FFF72"}
 
         def disableStart():
             startBtn.interactable = False
             startBtn.style = {"bg": "#FC3A3A"}
+
+        # Visualizer
 
         # GUI
         def onEditRange(widget: Widget):
@@ -235,10 +288,10 @@ class GUI:
             try:
                 text = dataRangeEntry.getText(dataRangeEntry.obj)
                 if len(text.strip()) == 0:
-                    GUI.dataRange = 1
+                    GUI.dataRange = 2
                 else:
                     value = int(text)
-                    if value >= 1 and value <= 500:
+                    if value >= 2 and value <= 500:
                         GUI.dataRange = value
                     else:
                         Message.warn("값 범위를 벗어났습니다.")
@@ -253,7 +306,7 @@ class GUI:
 
             GUI.adjRange = False
             if not GUI.adjRange and not GUI.adjAmount:
-                EnableStart()
+                enableStart()
 
         dataRangeAdjBtn.event = onAdjustRange
 
@@ -290,7 +343,7 @@ class GUI:
 
             GUI.adjAmount = False
             if not GUI.adjRange and not GUI.adjAmount:
-                EnableStart()
+                enableStart()
 
         dataAmountAdjBtn.event = onAdjustAmount
 
@@ -313,7 +366,13 @@ class GUI:
             reverseBtn.style = {"bg": "#8FFF72"}
 
         def onStart(widget: Widget):
-            print(67)
+            sortInitEv.fire(
+                {
+                    "dataRange": GUI.dataRange,
+                    "dataAmount": GUI.dataAmount,
+                    "sortType": GUI.sortType,
+                }
+            )
 
         randBtn.event = onRandom
         orderBtn.event = onOrder
@@ -321,7 +380,22 @@ class GUI:
 
         startBtn.event = onStart
 
+        # 비주얼라이저쪽 버튼 이벤트
+
+        def goToSetting(self: Widget):
+            window.size = "400x300"
+            window.changePage("settingPage")
+
+        backBtn.event = goToSetting
+
         # Bindable Event
+
+        def goToVisualizer(requstorName, data):
+            window.size = "600x800"
+            print(f"[초기 데이터]\n{data}")
+            window.changePage("visualPage")
+
+        sortInitEv.eventCallback = goToVisualizer
 
         # MAIN ROOP
         window.changePage("settingPage")
