@@ -16,6 +16,7 @@ class OP_Manager:
 
     sortStatusEv = connect.getBindableEvent("sortStatusEv")
 
+    # 삽입, 퀵, 버블 순
     sort1Ev = connect.getBindableEvent("sort1Ev")
     sort2Ev = connect.getBindableEvent("sort2Ev")
     sort3Ev = connect.getBindableEvent("sort3Ev")

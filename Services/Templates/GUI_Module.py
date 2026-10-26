@@ -158,6 +158,7 @@ class Widget:
             for k, v in old_style.items():
                 if v == None:
                     self._style.pop(k)
+                    self._obj.config({k: self._obj.config(k)[3]})
                 else:
                     self._style[k] = old_style.get(k)
                     self._obj.config(self._style)
@@ -241,7 +242,13 @@ class Widget:
 
     def removeChildWidget(self, name: str):
         if name in self.childWidgets:
-            del self.childWidgets[name]
+            self.childWidgets[name].destroy()
+            self.childWidgets.pop(name)
+
+    def removeAllChildWidget(self):
+        for widgetName in list(self.childWidgets.keys()):
+            self.childWidgets[widgetName].destroy()
+            self.childWidgets.pop(widgetName)
 
     def changePlaceAttribute(
         self, new_placeType: str, new_placeAttribute: dict[str, Any]
@@ -328,17 +335,21 @@ class Page:
         old_style: dict[str, Any] = {}
         for k in new_style:
             oldvalue = self._style.get(k)
-            if oldvalue != None:
-                old_style[k] = oldvalue
+            old_style[k] = oldvalue
         try:
-            self._obj.config(new_style)
             for k, v in new_style.items():
                 self._style[k] = v
+            self._obj.config(new_style)
         except Exception as e:
             print(e)
             self._obj.config(old_style)
             for k, v in old_style.items():
-                self._style[k] = v
+                if v == None:
+                    self._style.pop(k)
+                    self._obj.config({k: self._obj.config(k)[3]})
+                else:
+                    self._style[k] = old_style.get(k)
+                    self._obj.config(self._style)
         if self.parent.currentPage is self:
             self.placePage()
 

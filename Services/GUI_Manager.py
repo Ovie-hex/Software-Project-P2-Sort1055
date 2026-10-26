@@ -17,13 +17,17 @@ class GUI:
     adjRange = False
     adjAmount = False
 
-    # visualPage Status
-    returnEnabled = True
-
-    # 전달할거
     dataRange = 2
     dataAmount = 2
     sortType = "Random"
+
+    # visualPage Status
+    initData: list[int] = []
+
+    speed = 0.05  # (0.05초 마다 gui 반영, 처리 시간은 고려하지 않음)
+
+    returnEnabled = True
+    stepEnabled = True
 
     def __init__(self):
         """
@@ -205,7 +209,7 @@ class GUI:
         interactFrame = visualPage.addWidget(
             name="interactFrame",
             widgetType="Frame",
-            style={},
+            style={"bg": "#3d3d3d"},
             placeType="place",
             placeAttribute={"y": 740, "relwidth": 1, "height": 60},
         )
@@ -232,28 +236,238 @@ class GUI:
             if GUI.returnEnabled:
                 widget.interactable = True
                 widget.style = {
-                    "text": "◀ 돌아가기",
-                    "font": ("맑은 고딕", 14, "bold"),
                     "bg": "#8FFF72",
-                    "fg": "#ffffff",
                 }
             else:
                 widget.interactable = False
                 widget.style = {
-                    "text": "◀ 돌아가기",
-                    "font": ("맑은 고딕", 14, "bold"),
-                    "bg": "#FC3A3A",
-                    "fg": "#ffffff",
+                    "bg": "#797878",
                 }
 
         backBtn.sync = backBtnSync
 
-        # playBtn = interactFrame.addChildWidget()
-        # stopBtn = interactFrame.addChildWidget()
-        # stepBtn = interactFrame.addChildWidget()
-        # speedBtn = interactFrame.addChildWidget()
-        # speedEntry = interactFrame.addChildWidget()
-        # speedAdjBtn = interactFrame.addChildWidget()
+        playBtn = interactFrame.addChildWidget(
+            name="playBtn",
+            widgetType="Button",
+            style={
+                "text": "▶",
+                "font": ("맑은 고딕", 14, "bold"),
+                "bg": "#8FFF72",
+                "fg": "#ffffff",
+            },
+            placeType="place",
+            placeAttribute={
+                "x": 230,
+                "y": 10,
+                "width": 60,
+                "height": 40,
+            },
+        )
+
+        stopBtn = interactFrame.addChildWidget(
+            name="stopBtn",
+            widgetType="Button",
+            style={
+                "text": "❚❚",
+                "font": ("맑은 고딕", 14, "bold"),
+                "bg": "#FF2222",
+                "fg": "#ffffff",
+            },
+            placeType="place",
+            placeAttribute={
+                "x": 230,
+                "y": 10,
+                "width": 60,
+                "height": 40,
+            },
+        )
+
+        stopBtn.hideWidget()
+        stopBtn.interactable = False
+
+        def stepBtnSync(self: Widget):
+            if GUI.stepEnabled:
+                self.interactable = True
+                self.style = {
+                    "bg": "#8FFF72",
+                }
+            else:
+                self.interactable = False
+                self.style = {
+                    "bg": "#797878",
+                }
+
+        stepBtn = interactFrame.addChildWidget(
+            name="stepBtn",
+            widgetType="Button",
+            style={
+                "text": "→",
+                "font": ("맑은 고딕", 14, "bold"),
+                "bg": "#8FFF72",
+                "fg": "#ffffff",
+            },
+            placeType="place",
+            placeAttribute={
+                "x": 300,
+                "y": 10,
+                "width": 60,
+                "height": 40,
+            },
+        )
+
+        stepBtn.sync = stepBtnSync
+
+        speedBtn = interactFrame.addChildWidget(
+            name="speedBtn",
+            widgetType="Button",
+            style={
+                "text": f" {GUI.speed} / (초)",
+                "font": ("맑은 고딕", 14, "bold"),
+            },
+            placeType="place",
+            placeAttribute={
+                "x": 370,
+                "y": 20,
+                "width": 160,
+                "height": 30,
+            },
+        )
+        speedLabel = interactFrame.addChildWidget(
+            name="speedLabel",
+            widgetType="Label",
+            placeType="place",
+            style={
+                "text": "실행 간격 ( 0.05 ~ ... )",
+                "anchor": "w",
+                "font": ("맑은 고딕", 9, "bold"),
+                "fg": "#ffffff",
+                "bg": "#3d3d3d",
+            },
+            placeAttribute={"x": 370, "width": 160, "height": 20},
+        )
+
+        speedEntry = interactFrame.addChildWidget(
+            name="speedEntry",
+            widgetType="Entry",
+            style={"font": ("맑은 고딕", 14, "bold"), "justify": "center"},
+            placeType="place",
+            placeAttribute={
+                "x": 370,
+                "y": 20,
+                "width": 160,
+                "height": 30,
+            },
+        )
+
+        speedEntry.hideWidget()
+
+        speedAdjBtn = interactFrame.addChildWidget(
+            name="speedAdjBtn",
+            widgetType="Button",
+            style={
+                "text": "확인",
+                "font": ("맑은 고딕", 14, "bold"),
+                "justify": "center",
+            },
+            placeType="place",
+            placeAttribute={
+                "x": 540,
+                "y": 10,
+                "width": 50,
+                "height": 40,
+            },
+        )
+
+        sortFrame1 = visualPage.addWidget(
+            name="sortFrame1",
+            widgetType="Frame",
+            style={"bg": "#CCCCCC"},
+            placeType="place",
+            placeAttribute={"y": 0, "relwidth": 1, "height": 245},
+        )
+        sortFrame2 = visualPage.addWidget(
+            name="sortFrame2",
+            widgetType="Frame",
+            style={"bg": "#CCCCCC"},
+            placeType="place",
+            placeAttribute={"y": 245, "relwidth": 1, "height": 245},
+        )
+        sortFrame3 = visualPage.addWidget(
+            name="sortFrame3",
+            widgetType="Frame",
+            style={"bg": "#CCCCCC"},
+            placeType="place",
+            placeAttribute={"y": 490, "relwidth": 1, "height": 245},
+        )
+
+        def addSortComponents(frame: Widget):
+
+            # 정렬 이름
+            frame.addChildWidget(
+                name="sortName",
+                widgetType="Label",
+                style={
+                    "text": "정렬 이름",
+                    "font": ("맑은 고딕", 14, "bold"),
+                    "justify": "center",
+                },
+                placeType="place",
+                placeAttribute={"x": 10, "y": 10, "width": 100, "height": 40},
+            )
+
+            # 정렬 통계
+            frame.addChildWidget(
+                name="sortStatus",
+                widgetType="Label",
+                style={
+                    "text": "정렬 통계",
+                    "font": ("맑은 고딕", 14, "bold"),
+                    "anchor": "w",
+                },
+                placeType="place",
+                placeAttribute={"x": 120, "y": 10, "width": 470, "height": 40},
+            )
+
+            # 정렬 그래프 프레임 (매우 중요!!!!!!!!😭😭😭😭😭)
+            frame.addChildWidget(
+                name="sortGraph",
+                widgetType="Frame",
+                placeType="place",
+                placeAttribute={"x": 30, "y": 60, "width": 540, "height": 180},
+            )
+
+            # 데이터 최대 및 최소
+            frame.addChildWidget(
+                name="valueMax",
+                widgetType="Label",
+                style={
+                    "text": "Max",
+                    "font": ("맑은 고딕", 8, "bold"),
+                    "bg": "#CCCCCC",
+                    "fg": "#ffffff",
+                    "anchor": "c",
+                },
+                placeType="place",
+                placeAttribute={"x": 0, "y": 55, "width": 30, "height": 20},
+            )
+
+            frame.addChildWidget(
+                name="valueMin",
+                widgetType="Label",
+                style={
+                    "text": "Min",
+                    "font": ("맑은 고딕", 8, "bold"),
+                    "bg": "#CCCCCC",
+                    "fg": "#ffffff",
+                    "anchor": "c",
+                },
+                placeType="place",
+                placeAttribute={"x": 0, "y": 230, "width": 30, "height": 20},
+            )
+
+        addSortComponents(sortFrame1)
+        addSortComponents(sortFrame2)
+        addSortComponents(sortFrame3)
 
         """
         ------------------------------
@@ -268,11 +482,11 @@ class GUI:
 
         def disableStart():
             startBtn.interactable = False
-            startBtn.style = {"bg": "#FC3A3A"}
+            startBtn.style = {"bg": "#797878"}
 
         # Visualizer
 
-        # GUI
+        # GUI Button Event ( Setting )
         def onEditRange(widget: Widget):
             widget.hideWidget()
             dataRangeEntry.removeText(dataRangeEntry.obj)
@@ -380,7 +594,9 @@ class GUI:
 
         startBtn.event = onStart
 
-        # 비주얼라이저쪽 버튼 이벤트
+        # GUI Button Event ( Visualizer )
+
+        # 공통
 
         def goToSetting(self: Widget):
             window.size = "400x300"
@@ -390,9 +606,50 @@ class GUI:
 
         # Bindable Event
 
+        def graphInit(self: Widget, num: int):
+            # sortName, sortStatus, sortGraph, valueMax, valueMin
+            match num:
+                case 1:
+                    self.childWidgets["sortName"].style = {"text": "삽입 정렬"}
+                case 2:
+                    self.childWidgets["sortName"].style = {"text": "퀵 정렬"}
+                case 3:
+                    self.childWidgets["sortName"].style = {"text": "버블 정렬"}
+
+            self.childWidgets["sortStatus"].style = {"text": " Comp : 0, Swap : 0"}
+
+            length = len(GUI.initData)
+            valueMax = max(GUI.initData)
+            valueMin = min(GUI.initData)
+
+            self.childWidgets["valueMax"].style = {"text": valueMax}
+            self.childWidgets["valueMin"].style = {"text": valueMin}
+
+            sortGraph = self.childWidgets["sortGraph"]
+            sortGraph.removeAllChildWidget()
+
+            # 겁나 매우 중요!!! (😭😭😭😭😭)
+            for i in range(0, length):
+                sortGraph.addChildWidget(
+                    name=i,
+                    widgetType="Frame",
+                    style={"bg": "#3d3d3d"},
+                    placeType="place",
+                    placeAttribute={
+                        "relx": 0 if i == 0 else i / length,
+                        "rely": 1,
+                        "relwidth": 1 / length,
+                        "relheight": GUI.initData[i] / valueMax,
+                        "anchor": "sw",
+                    },
+                )
+
         def goToVisualizer(requstorName, data):
             window.size = "600x800"
-            print(f"[초기 데이터]\n{data}")
+            GUI.initData = data[:]
+            graphInit(sortFrame1, 1)
+            graphInit(sortFrame2, 2)
+            graphInit(sortFrame3, 3)
             window.changePage("visualPage")
 
         sortInitEv.eventCallback = goToVisualizer
