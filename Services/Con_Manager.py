@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import *
 import secrets
+from copy import *
 
 # eventFilter 및 eventCallback 함수 작성시 매게변수로 requestor의 이름과 data를 받아야합니다.
 
@@ -79,19 +80,18 @@ class Connection:
         if self._onlinked:
             for event in self._events:
                 if event.name != requestor.name:
-                    if event.eventFilter == None and event.eventCallback != None:
-                        event.eventCallback(requestor.name, data)
+                    if event.eventFilter(requestor.name, deepcopy(data)) == False:
                         continue
-                    if not event.eventFilter(requestor.name, data):
-                        continue
-                    if event.eventCallback != None:
-                        event.eventCallback(requestor.name, data)
+                    else:
+                        event.eventCallback(requestor.name, deepcopy(data))
 
 
 class BindableEvent:
     _bindableEvents: list[BindableEvent] = []
 
     # Information
+    def _nothing(reqName: str, data: Any):
+        return True
 
     def __init__(self, name):
         self._name: str = str(hash(name + secrets.token_hex(67)))
@@ -149,9 +149,13 @@ class Connection_Manager:
 
         if con == None:
             event = BindableEvent(name)
-            Connection(name, event)
+            con = Connection(name, event)
+            con.adjustFilter(event, BindableEvent._nothing)
+            con.adjustCallback(event, BindableEvent._nothing)
             return event
         else:
             event = BindableEvent(name)
             con.addLink(event)
+            con.adjustFilter(event, BindableEvent._nothing)
+            con.adjustCallback(event, BindableEvent._nothing)
             return event

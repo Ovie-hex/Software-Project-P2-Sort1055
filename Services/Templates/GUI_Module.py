@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import *
-import copy
+from copy import *
 
 # Tkinter
 import tkinter as tk
@@ -120,7 +120,7 @@ class Widget:
 
     @property
     def placeAttribute(self):  # Read Only
-        return copy.deepcopy(self._placeAttribute)
+        return deepcopy(self._placeAttribute)
 
     @property
     def name(self):
@@ -140,7 +140,7 @@ class Widget:
 
     @property
     def style(self):
-        return copy.deepcopy(self._style)
+        return deepcopy(self._style)
 
     @style.setter
     def style(self, new_style: dict[str, Any]):
@@ -218,11 +218,11 @@ class Widget:
     def placeWidget(self):
         match self.placeType:
             case "pack":
-                self.obj.pack(self.placeAttribute)
+                self.obj.pack(**self.placeAttribute)
             case "grid":
-                self.obj.grid(self.placeAttribute)
+                self.obj.grid(**self.placeAttribute)
             case "place":
-                self.obj.place(self.placeAttribute)
+                self.obj.place(**self.placeAttribute)
 
     def addChildWidget(
         self,
@@ -243,12 +243,10 @@ class Widget:
     def removeChildWidget(self, name: str):
         if name in self.childWidgets:
             self.childWidgets[name].destroy()
-            self.childWidgets.pop(name)
 
     def removeAllChildWidget(self):
         for widgetName in list(self.childWidgets.keys()):
             self.childWidgets[widgetName].destroy()
-            self.childWidgets.pop(widgetName)
 
     def changePlaceAttribute(
         self, new_placeType: str, new_placeAttribute: dict[str, Any]
@@ -261,7 +259,6 @@ class Widget:
             self._placeType = new_placeType
             for k, v in new_placeAttribute.items():
                 self._placeAttribute[k] = v
-            self.placeWidget()
         except Exception as e:
             print(e)
             self.placeType = old_placeType
@@ -270,7 +267,8 @@ class Widget:
                     self._placeAttribute.pop(k)
                 else:
                     self._placeAttribute[k] = old_placeAttribute.get(k)
-            self.placeWidget()
+
+        self.placeWidget()
 
     def syncWidget(self):
         for child in self.childWidgets.values():
@@ -284,6 +282,12 @@ class Widget:
 
         self.childWidgets.clear()
         self._obj.destroy()
+
+        par: Page | Widget = self.parent
+        if isinstance(par, Page):
+            par.widgets.pop(self.name, None)
+        else:
+            par.childWidgets.pop(self.name, None)
 
 
 class Page:
@@ -328,7 +332,7 @@ class Page:
 
     @property
     def style(self):
-        return copy.deepcopy(self._style)
+        return deepcopy(self._style)
 
     @style.setter
     def style(self, new_style: dict[str, Any]):
@@ -497,6 +501,11 @@ class Window:
             self.currentPage.placePage()
         else:
             print("changePage : new page is already current page")
+
+    def wait(self, time: float):
+        var = tk.IntVar(self.obj, value=0)
+        self.obj.after(int(time * 1000), var.set, 1)
+        self.obj.wait_variable(var)
 
     def destroy(self):
         for page in list(self.pages.values()):

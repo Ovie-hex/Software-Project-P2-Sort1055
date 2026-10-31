@@ -26,8 +26,13 @@ class GUI:
 
     speed = 0.05  # (0.05초 마다 gui 반영, 처리 시간은 고려하지 않음)
 
-    returnEnabled = True
-    stepEnabled = True
+    isStart = False
+
+    status: list[dict[str, int]] = [
+        {"comp": 0, "swap": 0},
+        {"comp": 0, "swap": 0},
+        {"comp": 0, "swap": 0},
+    ]
 
     def __init__(self):
         """
@@ -37,11 +42,16 @@ class GUI:
         """
         sortInitEv = connect.getBindableEvent("sortInitEv")
 
-        sortStatusEv = connect.getBindableEvent("sortStatusEv")
+        sortStartEv = connect.getBindableEvent("sortStartEv")
+        sortPauseEv = connect.getBindableEvent("sortPauseEv")
+        sortStepEv = connect.getBindableEvent("sortStepEv")
+        sortSpeedEv = connect.getBindableEvent("sortSpeedEv")
 
         sort1Ev = connect.getBindableEvent("sort1Ev")
         sort2Ev = connect.getBindableEvent("sort2Ev")
         sort3Ev = connect.getBindableEvent("sort3Ev")
+
+        waitEv = connect.getBindableEvent("waitEv")
 
         """
         ------------------------------
@@ -233,7 +243,7 @@ class GUI:
         )
 
         def backBtnSync(widget: Widget):
-            if GUI.returnEnabled:
+            if not GUI.isStart:
                 widget.interactable = True
                 widget.style = {
                     "bg": "#8FFF72",
@@ -286,7 +296,7 @@ class GUI:
         stopBtn.interactable = False
 
         def stepBtnSync(self: Widget):
-            if GUI.stepEnabled:
+            if not GUI.isStart:
                 self.interactable = True
                 self.style = {
                     "bg": "#8FFF72",
@@ -596,7 +606,69 @@ class GUI:
 
         # GUI Button Event ( Visualizer )
 
-        # 공통
+        def onPlayBtn(self: Widget):
+            self.hideWidget()
+            self.interactable = False
+
+            GUI.isStart = True
+
+            stopBtn.interactable = True
+            stopBtn.placeWidget()
+
+            self.parent.syncWidget()
+
+            sortStartEv.fire(1)
+
+        def onStopBtn(self: Widget):
+            self.hideWidget()
+            self.interactable = False
+
+            GUI.isStart = False
+
+            playBtn.interactable = True
+            playBtn.placeWidget()
+
+            self.parent.syncWidget()
+
+            sortPauseEv.fire(1)
+
+        def onStepBtn(self: Widget):
+            sortStepEv.fire(1)
+
+        def onEditSpeed(self: Widget):
+            self.hideWidget()
+            speedAdjBtn.interactable = True
+            speedEntry.removeText(speedEntry.obj)
+            speedEntry.placeWidget()
+
+        def onAdjustSpeed(self: Widget):
+            speedAdjBtn.interactable = False
+
+            try:
+                text = speedEntry.getText(speedEntry.obj)
+                if len(text.strip()) == 0:
+                    GUI.speed = 0.05
+                else:
+                    value = round(float(text), 2)
+                    if value >= 0.05:
+                        GUI.speed = value
+                    else:
+                        Message.warn("값 범위를 벗어났습니다.")
+            except ValueError:
+                Message.error("숫자를 입력해주세요!")
+            except Exception:
+                Message.error("알 수 없는 오류가 발생하였습니다!")
+
+            speedBtn.style = {"text": f" {GUI.speed} / (초)"}
+            speedEntry.hideWidget()
+            speedBtn.placeWidget()
+            sortSpeedEv.fire(GUI.speed)
+
+        playBtn.event = onPlayBtn
+        stopBtn.event = onStopBtn
+        stepBtn.event = onStepBtn
+        speedBtn.event = onEditSpeed
+        speedAdjBtn.event = onAdjustSpeed
 
         def goToSetting(self: Widget):
             window.size = "400x300"
@@ -616,14 +688,20 @@ class GUI:
                 case 3:
                     self.childWidgets["sortName"].style = {"text": "버블 정렬"}
 
-            self.childWidgets["sortStatus"].style = {"text": " Comp : 0, Swap : 0"}
-
             length = len(GUI.initData)
-            valueMax = max(GUI.initData)
-            valueMin = min(GUI.initData)
+            valueMax = GUI.dataRange
+            valueMin = 0
 
             self.childWidgets["valueMax"].style = {"text": valueMax}
             self.childWidgets["valueMin"].style = {"text": valueMin}
+
+            for stat in GUI.status:
+                stat["comp"] = 0
+                stat["swap"] = 0
+
+            self.childWidgets["sortStatus"].style = {
+                "text": f" Comp : {GUI.status[num - 1]['comp']}, Swap : {GUI.status[num - 1]['swap']}"
+            }
 
             sortGraph = self.childWidgets["sortGraph"]
             sortGraph.removeAllChildWidget()
@@ -631,7 +709,7 @@ class GUI:
             # 겁나 매우 중요!!! (😭😭😭😭😭)
             for i in range(0, length):
                 sortGraph.addChildWidget(
-                    name=i,
+                    name=str(i),
                     widgetType="Frame",
                     style={"bg": "#3d3d3d"},
                     placeType="place",
@@ -653,6 +731,68 @@ class GUI:
             window.changePage("visualPage")
 
         sortInitEv.eventCallback = goToVisualizer
+
+        def applyGraph(self: Widget, insts: list[list[str | int]], num):
+            # print(insts)
+            sortGraph = self.childWidgets["sortGraph"]
+            for inst in insts:
+                op = inst.pop(0)
+                match op:
+                    case "default":
+                        for value in inst:
+                            sortGraph.childWidgets[str(value)].style = {"bg": "#3d3d3d"}
+                    case "disable":
+                        for value in inst:
+                            sortGraph.childWidgets[str(value)].style = {"bg": "#a5a5a5"}
+                    case "comp":
+                        for value in inst:
+                            sortGraph.childWidgets[str(value)].style = {"bg": "#ff6868"}
+                        GUI.status[num]["comp"] += 1
+
+                    case "swap":
+                        g1 = sortGraph.childWidgets[str(inst[0])]
+                        g2 = sortGraph.childWidgets[str(inst[1])]
+
+                        g1.style = {"bg": "#68ff95"}
+                        g2.style = {"bg": "#68ff95"}
+
+                        temp1 = {"relheight": g1.placeAttribute["relheight"]}
+                        temp2 = {"relheight": g2.placeAttribute["relheight"]}
+
+                        g1.changePlaceAttribute("place", temp2)
+                        g2.changePlaceAttribute("place", temp1)
+
+                        GUI.status[num]["swap"] += 1
+                    case "pivot":
+                        value = inst[0]
+                        sortGraph.childWidgets[str(value)].style = {"bg": "#4da0ff"}
+                    case "end":
+                        for graph in sortGraph.childWidgets.values():
+                            graph.style = {"bg": "#68ff95"}
+
+            self.childWidgets["sortStatus"].style = {
+                "text": f" Comp : {GUI.status[num]['comp']}, Swap : {GUI.status[num]['swap']}"
+            }
+
+            window.obj.update_idletasks()
+
+        def sort1Call(requstorName, data):
+            applyGraph(sortFrame1, data, 0)
+
+        def sort2Call(requstorName, data):
+            applyGraph(sortFrame2, data, 1)
+
+        def sort3Call(requstorName, data):
+            applyGraph(sortFrame3, data, 2)
+
+        sort1Ev.eventCallback = sort1Call
+        sort2Ev.eventCallback = sort2Call
+        sort3Ev.eventCallback = sort3Call
+
+        def wait(requstorName, data):
+            window.wait(data)
+
+        waitEv.eventCallback = wait
 
         # MAIN ROOP
         window.changePage("settingPage")
