@@ -134,8 +134,6 @@ class Partition:
         inst = []
         inst.append(["pivot", self._startPos])
 
-        print(self._length)
-
         if len(self._prevArg) > 0:
             inst.append(["default"] + self._prevArg[:])
 
