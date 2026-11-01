@@ -44,9 +44,9 @@ class OP_Manager:
         #     inst2 = OP_Manager.sorts[1].act()
         #     OP_Manager.sort2Ev.fire(inst2)
 
-        # if not OP_Manager.sorts[2].ended:
-        #     inst3 = OP_Manager.sorts[2].act()
-        #     OP_Manager.sort3Ev.fire(inst3)
+        if not OP_Manager.sorts[2].ended:
+            inst3 = OP_Manager.sorts[2].act()
+            OP_Manager.sort3Ev.fire(inst3)
 
     # --------------------------------------------------------
 

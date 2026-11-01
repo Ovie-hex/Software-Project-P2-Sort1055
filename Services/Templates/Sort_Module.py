@@ -144,6 +144,8 @@ class BubbleSort(Sort):
 
         self._pos = 0
         self._roopCount = 0
+        self._NextStat = "comp"
+        self._prevArg = []
 
     # Read Only
     @property
@@ -153,4 +155,39 @@ class BubbleSort(Sort):
     # Member Method
 
     def act(self) -> list[list[str | int]]:
-        pass
+        inst = []
+        if not self._roopCount >= self._length - 1:
+            if len(self._prevArg) > 0:
+                inst.append(["default"] + self._prevArg[:])
+            match self._NextStat:
+                case "comp":
+                    if self._pos >= self._length - 1 - self._roopCount:
+                        inst.append(["disable", self._pos])
+                        self._roopCount += 1
+                        self._pos = 0
+
+                    if self.data[self._pos] > self.data[self._pos + 1]:
+                        self._NextStat = "swap"
+
+                    inst.append(["comp", self._pos, self._pos + 1])
+
+                    self._prevArg.clear()
+                    self._prevArg.append(self._pos)
+                    self._prevArg.append(self._pos + 1)
+
+                    if self._NextStat == "comp":
+                        self._pos += 1
+
+                case "swap":
+                    temp = self.data[self._pos + 1]
+                    self.data[self._pos + 1] = self.data[self._pos]
+                    self.data[self._pos] = temp
+                    inst.append(["swap", self._pos, self._pos + 1])
+
+                    self._pos += 1
+
+                    self._NextStat = "comp"
+        else:
+            self.ended = True
+            inst.append(["end"])
+        return inst
