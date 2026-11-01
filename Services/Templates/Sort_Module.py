@@ -104,28 +104,156 @@ class Partition:
 
         self._data: list[int] = data
         self._pivotValue: int = self._data[startPos]
+
+        self._startPos = startPos
+        self._endPos = endPos
+        self._length = endPos - startPos + 1
+
         self._low: int = startPos + 1
+        self._lowComplted = False
+
         self._high: int = endPos
+        self._highComplted = False
 
         self._left: Partition = None
         self._right: Partition = None
 
+        self._ended = False
+
+        self._prevArg = []
+
     # Read Only
     @property
     def data(self):
-        return super().data
+        return super()._data
 
     # Member Method
 
-    def act(self) -> Any:
-        pass
+    def act(self) -> list[list[str | int]]:
+
+        inst = []
+        inst.append(["pivot", self._startPos])
+
+        print(self._length)
+
+        if len(self._prevArg) > 0:
+            inst.append(["default"] + self._prevArg[:])
+
+        match self._length:
+            case 1:
+                inst.append(["disable"] + [self._startPos])
+                self._ended = True
+            case 2:
+                if self._data[self._startPos] > self._data[self._startPos + 1]:
+                    temp = self._data[self._startPos]
+                    self._data[self._startPos] = self._data[self._startPos + 1]
+                    self._data[self._startPos + 1] = temp
+                    inst.append(["comp", self._startPos, self._startPos + 1])
+                    inst.append(["swap", self._startPos, self._startPos + 1])
+                    inst.append(["disable", self._startPos, self._startPos + 1])
+                    self._prevArg.clear()
+                    self._ended = True
+                else:
+                    inst.append(["comp", self._startPos, self._startPos + 1])
+                    inst.append(["disable", self._startPos, self._startPos + 1])
+                    self._ended = True
+            case _:
+                if not self._lowComplted:
+                    inst.append(["comp", self._low])
+                    if self._data[self._low] > self._pivotValue:
+                        self._lowComplted = True
+                    else:
+                        if self._low == self._endPos:
+                            temp = self._data[self._startPos]
+                            self._data[self._startPos] = self._data[self._low]
+                            self._data[self._low] = temp
+                            inst.append(["swap", self._startPos, self._low])
+                            inst.append(["default"] + [self._startPos])
+                            inst.append(["disable"] + [self._low])
+                            self._prevArg.clear()
+
+                            self._left = Partition(
+                                self._data, self._startPos, self._high - 1
+                            )
+                            self._left._right = Partition(
+                                self._data, self._endPos, self._endPos
+                            )
+
+                            if self._right != None:
+                                self._left._right._right = self._right
+
+                            self._ended = True
+
+                        else:
+                            self._prevArg.clear()
+                            self._prevArg.append(self._low)
+                            self._low += 1
+
+                elif not self._highComplted:
+                    inst.append(["comp", self._high])
+                    if self._data[self._high] < self._pivotValue:
+                        self._highComplted = True
+                    else:
+                        if self._high == self._startPos:
+                            inst.append(["disable"] + [self._startPos])
+                            self._startPos += 1
+                            self._length -= 1
+                            self._pivotValue = self._data[self._startPos]
+                            self._low = self._startPos + 1
+                            self._high = self._endPos
+                            self._lowComplted = False
+                            self._prevArg.clear()
+
+                        else:
+                            self._prevArg.clear()
+                            self._prevArg.append(self._high)
+                            self._high -= 1
+
+                else:
+                    if self._low > self._high:
+                        temp = self._data[self._startPos]
+                        self._data[self._startPos] = self._data[self._high]
+                        self._data[self._high] = temp
+                        inst.append(["swap", self._startPos, self._high])
+                        inst.append(["default"] + [self._startPos, self._low])
+                        inst.append(["disable"] + [self._high])
+
+                        self._left = Partition(
+                            self._data, self._startPos, self._high - 1
+                        )
+                        self._left._right = Partition(
+                            self._data, self._high + 1, self._endPos
+                        )
+
+                        if self._right != None:
+                            self._left._right._right = self._right
+
+                        self._ended = True
+                    else:
+                        temp = self._data[self._low]
+                        self._data[self._low] = self._data[self._high]
+                        self._data[self._high] = temp
+                        inst.append(["swap", self._low, self._high])
+
+                        self._prevArg.clear()
+                        self._prevArg.append(self._low)
+                        self._prevArg.append(self._high)
+
+                        self._low += 1
+                        self._lowComplted = False
+                        self._high -= 1
+                        self._highComplted = False
+
+        return inst
 
 
 class QuickSort(Sort):
     def __init__(self, data: list[int]):
         super().__init__(data)
 
-        self._currentPartition: Partition = Partition(data, 0, self._length)
+        self._currentPartition: Partition = Partition(self.data, 0, self._length - 1)
+
+        self.ended = False
 
     # Read Only
     @property
@@ -135,7 +263,20 @@ class QuickSort(Sort):
     # Member Method
 
     def act(self) -> list[list[str | int]]:
-        pass
+        inst = []
+        if self._currentPartition._ended:
+            if self._currentPartition._left != None:
+                self._currentPartition = self._currentPartition._left
+                inst = inst + self._currentPartition.act()
+            elif self._currentPartition._right != None:
+                self._currentPartition = self._currentPartition._right
+                inst = inst + self._currentPartition.act()
+            else:
+                self.ended = True
+                inst.append(["end"])
+        else:
+            inst = inst + self._currentPartition.act()
+        return inst
 
 
 class BubbleSort(Sort):
