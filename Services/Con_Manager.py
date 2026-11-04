@@ -9,6 +9,10 @@ from copy import *
 class Connection:
     _connections: list[Connection] = []
 
+    @staticmethod
+    def getConnection(name: str):
+        return next((c for c in Connection._connections if c.name == name), None)
+
     # Information
 
     def __init__(self, name: str, firstevent: BindableEvent):
@@ -144,18 +148,16 @@ class Connection_Manager:
     def getBindableEvent(name: str) -> BindableEvent | None:
 
         name = name.strip()
+        event: BindableEvent = BindableEvent(name)
 
-        con = next((c for c in Connection._connections if c.name == name), None)
+        con = Connection.getConnection(name)
 
         if con == None:
-            event = BindableEvent(name)
             con = Connection(name, event)
             con.adjustFilter(event, BindableEvent._nothing)
             con.adjustCallback(event, BindableEvent._nothing)
-            return event
         else:
-            event = BindableEvent(name)
             con.addLink(event)
             con.adjustFilter(event, BindableEvent._nothing)
             con.adjustCallback(event, BindableEvent._nothing)
-            return event
+        return event

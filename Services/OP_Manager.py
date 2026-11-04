@@ -35,18 +35,24 @@ class OP_Manager:
     # -------------------------------------------------------- Main
 
     def sortAll():
+        work = False
 
         if not OP_Manager.sorts[0].ended:
             inst1 = OP_Manager.sorts[0].act()
+            work = True
             OP_Manager.sort1Ev.fire(inst1)
 
         if not OP_Manager.sorts[1].ended:
             inst2 = OP_Manager.sorts[1].act()
+            work = True
             OP_Manager.sort2Ev.fire(inst2)
 
         if not OP_Manager.sorts[2].ended:
             inst3 = OP_Manager.sorts[2].act()
+            work = True
             OP_Manager.sort3Ev.fire(inst3)
+
+        return work
 
     # --------------------------------------------------------
 
@@ -94,15 +100,20 @@ class OP_Manager:
         OP_Manager.isStart = False
 
     def stepSort(requestorName, data):
-        OP_Manager.sortAll()
+        isWork = OP_Manager.sortAll()
+        if not isWork:
+            OP_Manager.sortPauseEv.fire(1)
 
     def autoSort(requestorName, data):
         OP_Manager.isStart = True
         while OP_Manager.isStart:
-            OP_Manager.sortAll()
+            isWork = OP_Manager.sortAll()
+            if not isWork:
+                OP_Manager.sortPauseEv.fire(1)
+                break
             initTime = time.perf_counter()
             while True:
-                OP_Manager.waitEv.fire(0.01)
+                OP_Manager.waitEv.fire(0.001)
                 if (
                     time.perf_counter() - initTime >= OP_Manager.speed
                     or not OP_Manager.isStart

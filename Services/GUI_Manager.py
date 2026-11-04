@@ -347,7 +347,7 @@ class GUI:
             widgetType="Label",
             placeType="place",
             style={
-                "text": "실행 간격 ( 0.05 ~ ... )",
+                "text": "실행 간격 ( 0.01 ~ ... / 초 )",
                 "anchor": "w",
                 "font": ("맑은 고딕", 9, "bold"),
                 "fg": "#ffffff",
@@ -647,10 +647,10 @@ class GUI:
             try:
                 text = speedEntry.getText(speedEntry.obj)
                 if len(text.strip()) == 0:
-                    GUI.speed = 0.05
+                    GUI.speed = 0.01
                 else:
                     value = round(float(text), 2)
-                    if value >= 0.05:
+                    if value >= 0.01:
                         GUI.speed = value
                     else:
                         Message.warn("값 범위를 벗어났습니다.")
@@ -728,6 +728,10 @@ class GUI:
             graphInit(sortFrame1, 1)
             graphInit(sortFrame2, 2)
             graphInit(sortFrame3, 3)
+            playBtn.style = {"bg": "#8FFF72"}
+            stepBtn.style = {"bg": "#8FFF72"}
+            stepBtn.interactable = True
+            playBtn.interactable = True
             window.changePage("visualPage")
 
         sortInitEv.eventCallback = goToVisualizer
@@ -785,9 +789,20 @@ class GUI:
         def sort3Call(requstorName, data):
             applyGraph(sortFrame3, data, 2)
 
+        def stopAll(requstorName, data):
+            playBtn.style = {"bg": "#797878"}
+            stepBtn.style = {"bg": "#797878"}
+            stopBtn.hideWidget()
+            stepBtn.interactable = False
+            playBtn.interactable = False
+            playBtn.placeWidget()
+            GUI.isStart = False
+            backBtn.syncWidget()
+
         sort1Ev.eventCallback = sort1Call
         sort2Ev.eventCallback = sort2Call
         sort3Ev.eventCallback = sort3Call
+        sortPauseEv.eventCallback = stopAll
 
         def wait(requstorName, data):
             window.wait(data)
