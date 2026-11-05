@@ -60,7 +60,7 @@ class OP_Manager:
 
         if data["dataRange"] < 2 or data["dataRange"] > 500:
             return False
-        if data["dataAmount"] < 2 or data["dataAmount"] > 100:
+        if data["dataAmount"] < 2 or data["dataAmount"] > 150:
             return False
         if data["sortType"] not in ["Random", "Order", "Reverse"]:
             return False

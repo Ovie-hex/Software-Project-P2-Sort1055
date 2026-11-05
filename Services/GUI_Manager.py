@@ -119,7 +119,7 @@ class GUI:
             widgetType="Label",
             placeType="place",
             style={
-                "text": "데이터 개수 [2 ~ 100]",
+                "text": "데이터 개수 [2 ~ 150]",
                 "anchor": "w",
                 "bg": "#CCCCCC",
                 "font": ("맑은 고딕", 8, "bold"),
@@ -552,7 +552,7 @@ class GUI:
                     GUI.dataAmount = 2
                 else:
                     value = int(text)
-                    if value >= 2 and value <= 100:
+                    if value >= 2 and value <= 150:
                         GUI.dataAmount = value
                     else:
                         Message.warn("값 범위를 벗어났습니다.")
