@@ -27,7 +27,7 @@ class GUI:
     speed = 0.05  # (0.05초 마다 gui 반영, 처리 시간은 고려하지 않음)
 
     isStart = False
-
+    name = ["삽입 정렬", "퀵 정렬", "버블 정렬"]
     status: list[dict[str, int]] = [
         {"comp": 0, "swap": 0},
         {"comp": 0, "swap": 0},
@@ -680,13 +680,7 @@ class GUI:
 
         def graphInit(self: Widget, num: int):
             # sortName, sortStatus, sortGraph, valueMax, valueMin
-            match num:
-                case 1:
-                    self.childWidgets["sortName"].style = {"text": "삽입 정렬"}
-                case 2:
-                    self.childWidgets["sortName"].style = {"text": "퀵 정렬"}
-                case 3:
-                    self.childWidgets["sortName"].style = {"text": "버블 정렬"}
+            self.childWidgets["sortName"].style = {"text": GUI.name[num - 1]}
 
             length = len(GUI.initData)
             valueMax = GUI.dataRange
@@ -739,6 +733,7 @@ class GUI:
         def applyGraph(self: Widget, insts: list[list[str | int]], num):
             # print(insts)
             sortGraph = self.childWidgets["sortGraph"]
+
             for inst in insts:
                 op = inst.pop(0)
                 match op:
@@ -773,6 +768,9 @@ class GUI:
                     case "end":
                         for graph in sortGraph.childWidgets.values():
                             graph.style = {"bg": "#68ff95"}
+                        print(
+                            f"{GUI.name[num]} 종료 / 비교 횟수 : {GUI.status[num]['comp']}, 교환 횟수 : {GUI.status[num]['swap']}"
+                        )
 
             self.childWidgets["sortStatus"].style = {
                 "text": f" Comp : {GUI.status[num]['comp']}, Swap : {GUI.status[num]['swap']}"

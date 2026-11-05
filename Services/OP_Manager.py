@@ -88,6 +88,10 @@ class OP_Manager:
         OP_Manager.sorts.append(QuickSort(OP_Manager.initData[:]))
         OP_Manager.sorts.append(BubbleSort(OP_Manager.initData[:]))
 
+        print(
+            f"< 초기 데이터 > [ 데이터 범위 : 1 ~ {data['dataRange']} / 데이터 개수 : {data['dataAmount']} / 데이터 형식 : {data['sortType']} ]\n{OP_Manager.initData}"
+        )
+
     sortInitEv.eventFilter = sortInitEvFilter
     sortInitEv.eventCallback = sortInitEvCallback
 

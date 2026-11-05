@@ -110,10 +110,10 @@ class Partition:
         self._length = endPos - startPos + 1
 
         self._low: int = startPos + 1
-        self._lowComplted = False
+        self._lowCompleted = False
 
         self._high: int = endPos
-        self._highComplted = False
+        self._highCompleted = False
 
         self._left: Partition = None
         self._right: Partition = None
@@ -156,10 +156,10 @@ class Partition:
                     inst.append(["disable", self._startPos, self._startPos + 1])
                     self._ended = True
             case _:
-                if not self._lowComplted:
+                if not self._lowCompleted:
                     inst.append(["comp", self._low])
                     if self._data[self._low] > self._pivotValue:
-                        self._lowComplted = True
+                        self._lowCompleted = True
                     else:
                         if self._low == self._endPos:
                             temp = self._data[self._startPos]
@@ -187,10 +187,10 @@ class Partition:
                             self._prevArg.append(self._low)
                             self._low += 1
 
-                elif not self._highComplted:
+                elif not self._highCompleted:
                     inst.append(["comp", self._high])
                     if self._data[self._high] < self._pivotValue:
-                        self._highComplted = True
+                        self._highCompleted = True
                     else:
                         if self._high == self._startPos:
                             inst.append(["disable"] + [self._startPos])
@@ -199,7 +199,7 @@ class Partition:
                             self._pivotValue = self._data[self._startPos]
                             self._low = self._startPos + 1
                             self._high = self._endPos
-                            self._lowComplted = False
+                            self._lowCompleted = False
                             self._prevArg.clear()
 
                         else:
@@ -238,9 +238,9 @@ class Partition:
                         self._prevArg.append(self._high)
 
                         self._low += 1
-                        self._lowComplted = False
+                        self._lowCompleted = False
                         self._high -= 1
-                        self._highComplted = False
+                        self._highCompleted = False
 
         return inst
 
@@ -250,8 +250,6 @@ class QuickSort(Sort):
         super().__init__(data)
 
         self._currentPartition: Partition = Partition(self.data, 0, self._length - 1)
-
-        self.ended = False
 
     # Read Only
     @property
